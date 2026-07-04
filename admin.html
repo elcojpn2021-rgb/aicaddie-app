@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3秒AIキャディ - 管理画面</title>
+<style>
+:root{
+  --green-deep:#122E24;
+  --green:#25543F;
+  --green-mid:#3E7A5C;
+  --cream:#F4EFE2;
+  --paper:#FBF8F1;
+  --ink:#1B1A16;
+  --flag:#C1442D;
+  --line:#D8D0BB;
+  --radius:12px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--cream);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+  padding:0 0 60px;
+}
+header{
+  background:linear-gradient(180deg, var(--green-deep) 0%, var(--green) 100%);
+  color:var(--paper);padding:22px 20px;
+}
+header h1{margin:0 0 4px;font-size:20px;}
+header p{margin:0;font-size:12.5px;color:#DCE6DE;}
+.wrap{max-width:820px;margin:0 auto;padding:18px;}
+.card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:18px;
+}
+.card h2{font-size:15px;margin:0 0 12px;color:var(--green);}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.field{flex:1;min-width:120px;}
+.field label{display:block;font-size:11.5px;color:#6b6558;margin-bottom:4px;}
+.field input{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+  font-size:13.5px;background:#fff;color:var(--ink);
+}
+button{
+  font-size:13px;font-weight:700;color:var(--paper);background:var(--green);
+  border:none;border-radius:8px;padding:9px 16px;cursor:pointer;
+}
+button.secondary{background:none;color:var(--green);border:1px solid var(--green);}
+button.danger{background:var(--flag);}
+button:disabled{opacity:.5;cursor:default;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+th{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);color:#6b6558;font-weight:600;}
+td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.badge{padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;}
+.badge.ok{background:#DCEFE3;color:var(--green);}
+.badge.no{background:#F3D8D0;color:var(--flag);}
+.msg{font-size:12.5px;margin-top:6px;}
+.msg.ok{color:var(--green);}
+.msg.err{color:var(--flag);}
+textarea{
+  width:100%;min-height:90px;font-size:12.5px;font-family:monospace;
+  border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink);
+}
+.codebox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;}
+.small{font-size:11px;color:#8a8371;}
+.locked-notice{padding:40px 20px;text-align:center;color:var(--paper);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⛳ 3秒AIキャディ - 管理画面</h1>
+  <p>クーポンコードの発行・アクセスキーの管理を行います。</p>
+</header>
+
+<div class="wrap">
+
+  <div class="card" id="auth-card">
+    <h2>接続設定</h2>
+    <div class="row">
+      <div class="field" style="flex:2;">
+        <label>Worker Base URL(末尾に /advice は付けない)</label>
+        <input type="text" id="base-url" placeholder="https://xxxx.workers.dev">
+      </div>
+      <div class="field">
+        <label>管理者パスワード(ADMIN_SECRET)</label>
+        <input type="password" id="admin-secret" placeholder="ADMIN_SECRET">
+      </div>
+    </div>
+    <button id="save-auth">保存して読み込む</button>
+    <button class="secondary" id="clear-auth" type="button">保存内容を削除</button>
+    <p class="msg" id="auth-msg"></p>
+    <p class="small">※ この画面はブラウザのlocalStorageに接続情報を保存します。共有端末では使用後に「保存内容を削除」を押してください。</p>
+  </div>
+
+  <div id="app" style="display:none;">
+
+    <div class="card">
+      <h2>クーポンコードを発行</h2>
+      <div class="row">
+        <div class="field">
+          <label>ラベル(例: note 2026年7月号)</label>
+          <input type="text" id="c-label" placeholder="任意のメモ">
+        </div>
+        <div class="field">
+          <label>発行枚数(未指定コードでランダム生成)</label>
+          <input type="number" id="c-count" value="1" min="1" max="200">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>コードを指定する場合(1件のみ・任意)</label>
+          <input type="text" id="c-code" placeholder="空欄ならランダム生成">
+        </div>
+        <div class="field">
+          <label>1コードあたりの利用回数上限</label>
+          <input type="number" id="c-max-redemptions" value="1" min="1">
+        </div>
+        <div class="field">
+          <label>発行アクセスキーの1日上限(空欄=デフォルト)</label>
+          <input type="number" id="c-daily-limit" placeholder="例: 50">
+        </div>
+        <div class="field">
+          <label>有効期限(任意・JST)</label>
+          <input type="datetime-local" id="c-expires">
+        </div>
+      </div>
+      <button id="c-create-btn">発行する</button>
+      <p class="msg" id="c-create-msg"></p>
+      <div class="codebox" id="c-created-box" style="display:none;">
+        <div class="small">発行されたコード(note記事や購入者への案内にそのまま使えます):</div>
+        <textarea id="c-created-list" readonly></textarea>
+        <button class="secondary" id="c-created-copy" type="button" style="margin-top:6px;">全てコピー</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>クーポンコード一覧 <button class="secondary" id="c-refresh" type="button" style="float:right;">更新</button></h2>
+      <table>
+        <thead><tr>
+          <th>コード</th><th>ラベル</th><th>使用状況</th><th>1日上限</th><th>有効期限</th><th>状態</th><th></th>
+        </tr></thead>
+        <tbody id="coupon-table-body"></tbody>
+      </table>
+      <p class="small" id="coupon-empty" style="display:none;">まだクーポンコードがありません。</p>
+    </div>
+
+    <div class="card">
+      <h2>アクセスキー一覧 <button class="secondary" id="k-refresh" type="button" style="float:right;">更新</button></h2>
+      <table>
+        <thead><tr>
+          <th>アクセスキー</th><th>発行元コード</th><th>ラベル</th><th>本日の利用</th><th>状態</th><th></th>
+        </tr></thead>
+        <tbody id="key-table-body"></tbody>
+      </table>
+      <p class="small" id="key-empty" style="display:none;">まだアクセスキーがありません。</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const baseUrlInput = document.getElementById("base-url");
+const adminSecretInput = document.getElementById("admin-secret");
+const authMsg = document.getElementById("auth-msg");
+const app = document.getElementById("app");
+
+function loadAuth(){
+  baseUrlInput.value = localStorage.getItem("aicaddy_admin_base_url") || "";
+  adminSecretInput.value = localStorage.getItem("aicaddy_admin_secret") || "";
+  if(baseUrlInput.value && adminSecretInput.value){
+    app.style.display = "block";
+    refreshAll();
+  }
+}
+
+document.getElementById("save-auth").onclick = () => {
+  localStorage.setItem("aicaddy_admin_base_url", baseUrlInput.value.trim().replace(/\/$/, ""));
+  localStorage.setItem("aicaddy_admin_secret", adminSecretInput.value.trim());
+  authMsg.textContent = "保存しました。";
+  authMsg.className = "msg ok";
+  app.style.display = "block";
+  refreshAll();
+};
+
+document.getElementById("clear-auth").onclick = () => {
+  localStorage.removeItem("aicaddy_admin_base_url");
+  localStorage.removeItem("aicaddy_admin_secret");
+  baseUrlInput.value = "";
+  adminSecretInput.value = "";
+  app.style.display = "none";
+  authMsg.textContent = "削除しました。";
+  authMsg.className = "msg";
+};
+
+async function adminFetch(path, body){
+  const base = (localStorage.getItem("aicaddy_admin_base_url") || baseUrlInput.value).replace(/\/$/, "");
+  const secret = localStorage.getItem("aicaddy_admin_secret") || adminSecretInput.value;
+  const res = await fetch(base + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok || data.error){
+    throw new Error(data.error || ("HTTP " + res.status));
+  }
+  return data;
+}
+
+function esc(s){
+  return (s===undefined||s===null?"":String(s)).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtDate(iso){
+  if(!iso) return "-";
+  try{ return new Date(iso).toLocaleString("ja-JP", {timeZone:"Asia/Tokyo"}); }catch(e){ return iso; }
+}
+
+/* ---------- クーポン発行 ---------- */
+document.getElementById("c-create-btn").onclick = async () => {
+  const msg = document.getElementById("c-create-msg");
+  msg.textContent = "";
+  const code = document.getElementById("c-code").value.trim();
+  const count = Number(document.getElementById("c-count").value) || 1;
+  const label = document.getElementById("c-label").value.trim();
+  const maxRedemptions = Number(document.getElementById("c-max-redemptions").value) || 1;
+  const dailyLimitRaw = document.getElementById("c-daily-limit").value.trim();
+  const dailyLimit = dailyLimitRaw ? Number(dailyLimitRaw) : undefined;
+  const expiresLocal = document.getElementById("c-expires").value;
+  const expiresAt = expiresLocal ? new Date(expiresLocal).toISOString() : undefined;
+
+  const body = { label, maxRedemptions, dailyLimit, expiresAt };
+  if(code) body.code = code; else body.count = count;
+
+  try{
+    const data = await adminFetch("/admin/coupon/create", body);
+    const box = document.getElementById("c-created-box");
+    const list = document.getElementById("c-created-list");
+    list.value = data.created.join("\n");
+    box.style.display = "block";
+    msg.textContent = `${data.created.length}件発行しました。` + (data.skipped.length ? ` (${data.skipped.length}件は既存のため重複スキップ)` : "");
+    msg.className = "msg ok";
+    loadCoupons();
+  }catch(e){
+    msg.textContent = "発行に失敗しました: " + e.message;
+    msg.className = "msg err";
+  }
+};
+
+document.getElementById("c-created-copy").onclick = () => {
+  const list = document.getElementById("c-created-list");
+  list.select();
+  if(navigator.clipboard) navigator.clipboard.writeText(list.value).catch(()=>{});
+};
+
+/* ---------- クーポン一覧 ---------- */
+async function loadCoupons(){
+  const tbody = document.getElementById("coupon-table-body");
+  const empty = document.getElementById("coupon-empty");
+  try{
+    const data = await adminFetch("/admin/coupon/list", {});
+    const coupons = data.coupons || [];
+    empty.style.display = coupons.length ? "none" : "block";
+    tbody.innerHTML = coupons.map(c => `
+      <tr>
+        <td><code>${esc(c.code)}</code></td>
+        <td>${esc(c.label)}</td>
+        <td>${c.redeemedCount||0} / ${c.maxRedemptions||1}</td>
+        <td>${c.dailyLimit ?? "-"}</td>
+        <td>${c.expiresAt ? fmtDate(c.expiresAt) : "-"}</td>
+        <td><span class="badge ${c.valid===false?'no':'ok'}">${c.valid===false?'無効':'有効'}</span></td>
+        <td><button class="secondary toggle-coupon" data-code="${esc(c.code)}" data-valid="${c.valid===false}">${c.valid===false?'再有効化':'無効化'}</button></td>
+      </tr>
+    `).join("");
+    tbody.querySelectorAll(".toggle-coupon").forEach(btn => {
+      btn.onclick = async () => {
+        const makeValid = btn.dataset.valid === "true";
+        btn.disabled = true;
+        try{
+          await adminFetch("/admin/coupon/update", { code: btn.dataset.code, valid: makeValid });
+          loadCoupons();
+        }catch(e){
+          alert("更新に失敗しました: " + e.message);
+          btn.disabled = false;
+        }
+      };
+    });
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="7" class="msg err">読み込みに失敗しました: ${esc(e.message)}</td></tr>`;
+  }
+}
+document.getElementById("c-refresh").onclick = loadCoupons;
+
+/* ---------- アクセスキー一覧 ---------- */
+async function loadKeys(){
+  const tbody = document.getElementById("key-table-body");
+  const empty = document.getElementById("key-empty");
+  try{
+    const data = await adminFetch("/admin/accesskey/list", {});
+    const keys = data.accessKeys || [];
+    empty.style.display = keys.length ? "none" : "block";
+    tbody.innerHTML = keys.map(k => `
+      <tr>
+        <td><code>${esc(k.accessKey)}</code></td>
+        <td>${esc(k.sourceCoupon)}</td>
+        <td>${esc(k.label)}</td>
+        <td>${k.usedToday||0} / ${k.dailyLimit ?? "デフォルト"}</td>
+        <td><span class="badge ${k.valid===false?'no':'ok'}">${k.valid===false?'失効':'有効'}</span></td>
+        <td><button class="secondary toggle-key" data-key="${esc(k.accessKey)}" data-valid="${k.valid===false}">${k.valid===false?'再有効化':'失効させる'}</button></td>
+      </tr>
+    `).join("");
+    tbody.querySelectorAll(".toggle-key").forEach(btn => {
+      btn.onclick = async () => {
+        const makeValid = btn.dataset.valid === "true";
+        if(!makeValid && !confirm("このアクセスキーを失効させますか?利用中の端末は次回リクエストから使えなくなります。")) return;
+        btn.disabled = true;
+        try{
+          await adminFetch("/admin/accesskey/update", { accessKey: btn.dataset.key, valid: makeValid });
+          loadKeys();
+        }catch(e){
+          alert("更新に失敗しました: " + e.message);
+          btn.disabled = false;
+        }
+      };
+    });
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="6" class="msg err">読み込みに失敗しました: ${esc(e.message)}</td></tr>`;
+  }
+}
+document.getElementById("k-refresh").onclick = loadKeys;
+
+function refreshAll(){
+  loadCoupons();
+  loadKeys();
+}
+
+loadAuth();
+</script>
+
+</body>
+</html>
