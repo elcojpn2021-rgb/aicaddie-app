@@ -392,13 +392,20 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
       </div>
       <div id="plan-key-form">
         <div class="plan-keyrow">
-          <input type="text" id="coupon-input" placeholder="クーポンコードを入力">
+          <input type="text" id="coupon-input" placeholder="クーポンコード / アクセスキーを入力">
           <button id="coupon-activate" type="button">有効化</button>
         </div>
         <p class="plan-msg" id="plan-msg"></p>
       </div>
       <div id="plan-unlocked" class="plan-unlocked-row" style="display:none;">
         <span class="plan-msg ok">✓ 有料版が有効です。全モードをご利用いただけます。</span>
+      </div>
+      <div id="plan-access-key-box" style="display:none; margin-top:10px;">
+        <p class="plan-msg" style="margin-bottom:6px;">アクセスキー(控えておくと他の端末でもそのまま入力して有料版を使えます):</p>
+        <div class="plan-keyrow">
+          <input type="text" id="access-key-display" readonly>
+          <button id="access-key-copy" type="button">コピー</button>
+        </div>
       </div>
     </div>
   </div>
@@ -621,8 +628,11 @@ const planKeyForm = document.getElementById("plan-key-form");
 const planUnlocked = document.getElementById("plan-unlocked");
 const planMsg = document.getElementById("plan-msg");
 const couponInput = document.getElementById("coupon-input");
+const planAccessKeyBox = document.getElementById("plan-access-key-box");
+const accessKeyDisplay = document.getElementById("access-key-display");
+const accessKeyCopyBtn = document.getElementById("access-key-copy");
 
-function setPlanUI(paid){
+function setPlanUI(paid, accessKey){
   isPaid = paid;
   if(paid){
     planLabel.textContent = "有料版";
@@ -630,12 +640,17 @@ function setPlanUI(paid){
     planBadge.className = "badge paid";
     planKeyForm.style.display = "none";
     planUnlocked.style.display = "flex";
+    if(accessKey){
+      accessKeyDisplay.value = accessKey;
+      planAccessKeyBox.style.display = "block";
+    }
   } else {
     planLabel.textContent = "無料版(ロングホールのみ)";
     planBadge.textContent = "FREE";
     planBadge.className = "badge free";
     planKeyForm.style.display = "block";
     planUnlocked.style.display = "none";
+    planAccessKeyBox.style.display = "none";
   }
   document.querySelectorAll(".mode-tab").forEach(tab=>{
     const locked = !paid && tab.dataset.mode !== "long";
@@ -656,7 +671,11 @@ async function checkPaidStatus(){
       body: JSON.stringify({ deviceId })
     });
     const data = await res.json();
-    setPlanUI(!!data.paid);
+    setPlanUI(!!data.paid, data.accessKey);
+    if(data.revoked){
+      planMsg.textContent = "このアクセスキーは無効化されました。別のクーポンコード/アクセスキーを入力してください。";
+      planMsg.className = "plan-msg err";
+    }
   } catch(e){
     setPlanUI(false);
   }
@@ -671,11 +690,16 @@ async function redeemCoupon(code){
     });
     const data = await res.json();
     if(data.ok){
-      setPlanUI(true);
-      planMsg.textContent = "";
-      planMsg.className = "plan-msg";
+      setPlanUI(true, data.accessKey);
+      if(data.isNewKey){
+        planMsg.textContent = "有効化しました。上のアクセスキーを控えておくと、他の端末でもそのまま入力するだけで有料版を使えます。";
+        planMsg.className = "plan-msg ok";
+      } else {
+        planMsg.textContent = "有効化しました。";
+        planMsg.className = "plan-msg ok";
+      }
     } else {
-      planMsg.textContent = data.error || "クーポンコードが無効です。";
+      planMsg.textContent = data.error || "コードが無効です。";
       planMsg.className = "plan-msg err";
     }
   } catch(e){
@@ -684,10 +708,26 @@ async function redeemCoupon(code){
   }
 }
 
+accessKeyCopyBtn.onclick = () => {
+  accessKeyDisplay.select();
+  accessKeyDisplay.setSelectionRange(0, 99999);
+  const done = () => {
+    accessKeyCopyBtn.textContent = "コピー済み";
+    setTimeout(()=>{ accessKeyCopyBtn.textContent = "コピー"; }, 1500);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(accessKeyDisplay.value).then(done).catch(()=>{
+      try{ document.execCommand("copy"); done(); }catch(e){}
+    });
+  } else {
+    try{ document.execCommand("copy"); done(); }catch(e){}
+  }
+};
+
 document.getElementById("coupon-activate").onclick = () => {
   const code = couponInput.value.trim();
   if(!code){
-    planMsg.textContent = "クーポンコードを入力してください。";
+    planMsg.textContent = "クーポンコードまたはアクセスキーを入力してください。";
     planMsg.className = "plan-msg err";
     return;
   }
