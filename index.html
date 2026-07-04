@@ -161,15 +161,50 @@ body{
 
 /* ---------- MODE TABS ---------- */
 .mode-tabs{
-  display:flex;gap:8px;padding:16px 22px 0;
+  display:flex;gap:6px;padding:16px 22px 0;
 }
 .mode-tab{
-  flex:1;text-align:center;padding:11px 8px;border-radius:10px 10px 0 0;
-  font-size:13px;font-weight:700;cursor:pointer;
+  flex:1;text-align:center;padding:10px 4px;border-radius:10px 10px 0 0;
+  font-size:11.5px;font-weight:700;cursor:pointer;
   background:var(--line);color:#78715f;
-  font-family:"Oswald",sans-serif;letter-spacing:.03em;
+  font-family:"Oswald",sans-serif;letter-spacing:.02em;
 }
 .mode-tab.active{background:var(--green);color:var(--paper);}
+.mode-tab.locked{opacity:.55;cursor:default;position:relative;}
+.mode-tab .lock{font-size:10px;margin-left:2px;display:none;}
+.mode-tab.locked .lock{display:inline;}
+
+/* ---------- PLAN / ACCESS KEY ---------- */
+.plan-box{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;
+}
+.plan-status{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12.5px;font-weight:500;margin-bottom:10px;
+}
+.plan-status .badge{
+  font-family:"Oswald",sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.04em;
+  padding:3px 9px;border-radius:20px;
+}
+.plan-status .badge.free{background:var(--line);color:#6b6558;}
+.plan-status .badge.paid{background:var(--flag);color:#fff;}
+.plan-keyrow{display:flex;gap:8px;}
+.plan-keyrow input{
+  flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+  font-size:13px;background:var(--paper);color:var(--ink);font-family:"Oswald",sans-serif;letter-spacing:.03em;
+}
+.plan-keyrow button{
+  font-size:12px;font-weight:700;color:var(--paper);background:var(--green);
+  border:none;border-radius:8px;padding:0 14px;cursor:pointer;font-family:"Noto Sans JP",sans-serif;
+}
+.plan-msg{font-size:11.5px;margin-top:7px;color:#6b6558;}
+.plan-msg.ok{color:var(--green);}
+.plan-msg.err{color:var(--flag);}
+.plan-unlocked-row{display:flex;justify-content:space-between;align-items:center;}
+.plan-unlocked-row button{
+  font-size:11.5px;color:#8a8371;background:none;border:none;cursor:pointer;text-decoration:underline;
+}
 
 /* ---------- FORM ---------- */
 .field{margin-bottom:12px;}
@@ -224,44 +259,6 @@ input[type=range]::-moz-range-thumb{
   background:var(--paper);font-size:12.5px;color:var(--ink);font-family:"Noto Sans JP",sans-serif;
 }
 
-/* ---------- DIAGRAM ---------- */
-.diagram-wrap{padding:6px 22px 20px;}
-.diagram{
-  position:relative;
-  height:64px;
-  background:linear-gradient(180deg,#EAF2E7,#DCEAD6);
-  border-radius:12px;
-  border:1px solid var(--line);
-  overflow:hidden;
-}
-.diagram .track{
-  position:absolute;left:14px;right:14px;top:50%;
-  height:3px;background:#B9C9B4;transform:translateY(-50%);
-  border-radius:2px;
-}
-.diagram .tee, .diagram .pin{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
-  font-family:"Oswald",sans-serif;font-size:10px;font-weight:700;color:var(--green);
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-}
-.diagram .tee{left:14px;}
-.diagram .pin{right:14px;left:auto;transform:translate(50%,-50%);}
-.diagram .dot{width:9px;height:9px;border-radius:50%;background:var(--green);border:2px solid var(--paper);}
-.diagram .marker{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
-  font-size:16px;
-}
-.diagram .marker.bunker{color:var(--sand);}
-.diagram .marker.water{color:var(--water);}
-.diagram .marker.ob{color:var(--flag);font-size:11px;font-weight:700;font-family:"Oswald",sans-serif;}
-.diagram .ball{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
-  width:12px;height:12px;border-radius:50%;
-  background:#fff;border:2px solid var(--flag);
-  box-shadow:0 0 0 3px rgba(193,68,45,0.15);
-  display:none;
-  transition:left .5s cubic-bezier(.2,.8,.2,1);
-}
 
 /* ---------- CTA ---------- */
 .cta-wrap{padding:4px 22px 24px;}
@@ -274,6 +271,13 @@ input[type=range]::-moz-range-thumb{
 }
 #ask-btn:active{transform:translateY(3px);box-shadow:0 3px 0 #8f3120;}
 #ask-btn:disabled{background:#b7ab8f;box-shadow:0 6px 0 #8a8067;cursor:default;}
+#repeat-btn{
+  width:100%;padding:12px;margin-bottom:10px;border-radius:12px;
+  background:var(--paper);color:var(--green);border:2px solid var(--green);
+  font-family:"Oswald",sans-serif;font-size:14px;font-weight:700;letter-spacing:.02em;
+  cursor:pointer;
+}
+#repeat-btn:active{background:#EAF2E7;}
 
 /* ---------- RESULT ---------- */
 #result{padding:0 22px 34px;display:none;}
@@ -377,10 +381,32 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
     </div>
   </div>
 
+  <!-- PLAN / COUPON -->
+  <div class="section" id="plan-section">
+    <h2><span class="num">★</span>ご利用プラン</h2>
+    <div class="plan-box">
+      <div class="plan-status">
+        <span id="plan-label">無料版(ロングホールのみ)</span>
+        <span class="badge free" id="plan-badge">FREE</span>
+      </div>
+      <div id="plan-key-form">
+        <div class="plan-keyrow">
+          <input type="text" id="coupon-input" placeholder="クーポンコードを入力">
+          <button id="coupon-activate" type="button">有効化</button>
+        </div>
+        <p class="plan-msg" id="plan-msg"></p>
+      </div>
+      <div id="plan-unlocked" class="plan-unlocked-row" style="display:none;">
+        <span class="plan-msg ok">✓ 有料版が有効です。全モードをご利用いただけます。</span>
+      </div>
+    </div>
+  </div>
+
   <!-- MODE TABS -->
   <div class="mode-tabs">
     <div class="mode-tab active" data-mode="long">ロングホール<br>(2打目以降)</div>
-    <div class="mode-tab" data-mode="short">ショートホール<br>(Par3ティー)</div>
+    <div class="mode-tab locked" data-mode="short">ショートホール<br>(ティーショット)<span class="lock">🔒</span></div>
+    <div class="mode-tab locked" data-mode="approach">アプローチ<br>(100yd以内)<span class="lock">🔒</span></div>
   </div>
 
   <!-- LONG MODE -->
@@ -389,7 +415,7 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
     <div class="field">
       <label>ピンまでの残り距離</label>
       <div class="slider-field">
-        <input type="range" id="l-dist" min="100" max="200" step="10" value="150" style="--fill:50%">
+        <input type="range" id="l-dist" min="100" max="250" step="10" value="250" style="--fill:100%">
         <div class="slider-value"><span id="l-dist-val">150</span>yd</div>
       </div>
     </div>
@@ -431,7 +457,7 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
     <div class="field">
       <label>ピンまでの距離</label>
       <div class="slider-field">
-        <input type="range" id="s-dist" min="100" max="200" step="10" value="150" style="--fill:50%">
+        <input type="range" id="s-dist" min="100" max="250" step="10" value="150" style="--fill:33.3%">
         <div class="slider-value"><span id="s-dist-val">150</span>yd</div>
       </div>
     </div>
@@ -474,26 +500,6 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
     </div>
     <div class="row2">
       <div class="field">
-        <label>手前バンカー</label>
-        <select id="s-bunker-front"><option>なし</option><option>あり</option></select>
-      </div>
-      <div class="field">
-        <label>奥バンカー</label>
-        <select id="s-bunker-back"><option>なし</option><option>あり</option></select>
-      </div>
-    </div>
-    <div class="row2">
-      <div class="field">
-        <label>池</label>
-        <select id="s-water"><option>なし</option><option>手前</option><option>左</option><option>右</option><option>グリーン奥</option></select>
-      </div>
-      <div class="field">
-        <label>OB</label>
-        <select id="s-ob"><option>なし</option><option>左</option><option>右</option></select>
-      </div>
-    </div>
-    <div class="row2">
-      <div class="field">
         <label>グリーンの広さ</label>
         <select id="s-green-size"><option>普通</option><option>狭い</option><option>広い</option></select>
       </div>
@@ -502,19 +508,45 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
         <select id="s-pin-pos"><option>中央</option><option>手前</option><option>奥</option><option>左</option><option>右</option></select>
       </div>
     </div>
+    <div id="s-hazards"></div>
   </div>
 
-  <!-- DIAGRAM -->
-  <div class="diagram-wrap">
-    <div class="diagram" id="diagram">
-      <div class="track"></div>
-      <div class="tee"><div class="dot"></div>現在地</div>
-      <div class="pin">🚩<span>ピン</span></div>
-      <div class="ball" id="ball-marker"></div>
+  <!-- APPROACH MODE -->
+  <div class="section" id="approach-form" style="display:none;">
+    <h2><span class="num">1</span>状況を入力</h2>
+    <div class="field">
+      <label>残り距離</label>
+      <div class="slider-field">
+        <input type="range" id="a-dist" min="10" max="100" step="5" value="50" style="--fill:44.4%">
+        <div class="slider-value"><span id="a-dist-val">50</span>yd</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>ライ</label>
+        <select id="a-lie">
+          <option>フェアウェイ</option><option>ラフ(浅め)</option><option>ラフ(深め)</option><option>ベアグラウンド</option><option>バンカー</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>グリーンの受け</label>
+        <select id="a-green-slope"><option>普通</option><option>受けている(止まりやすい)</option><option>受けていない(転がりやすい)</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>手前バンカー</label>
+        <select id="a-bunker-front"><option>なし</option><option>あり</option></select>
+      </div>
+      <div class="field">
+        <label>ピン位置</label>
+        <select id="a-pin-pos"><option>中央</option><option>手前</option><option>奥</option><option>左</option><option>右</option></select>
+      </div>
     </div>
   </div>
 
   <div class="cta-wrap">
+    <button id="repeat-btn" type="button" style="display:none;">🔁 前回と同じ状況で聞く</button>
     <button id="ask-btn">⛳ AIキャディに聞く</button>
     <div id="ai-error"></div>
   </div>
@@ -545,6 +577,8 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
 
 <script>
 const WORKER_URL = "https://aicaddie-api.elcojpn2021.workers.dev/advice";
+const REDEEM_URL = WORKER_URL.replace(/\/advice\/?$/, "/redeem");
+const STATUS_URL = WORKER_URL.replace(/\/advice\/?$/, "/status");
 
 const DEFAULT_CLUBS = [
   {name:"Dr", carry:210, run:20, use:true},
@@ -567,6 +601,101 @@ const DEFAULT_CLUBS = [
 
 let profile = loadProfile();
 let mode = "long";
+
+/* ---------- PLAN (無料版 / 有料版クーポンコード) ---------- */
+function getDeviceId(){
+  let id = localStorage.getItem("aicaddy_device_id");
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(16).slice(2)));
+    localStorage.setItem("aicaddy_device_id", id);
+  }
+  return id;
+}
+const deviceId = getDeviceId();
+let isPaid = false; // /status で確認できるまでは無料版として扱う
+
+const planLabel = document.getElementById("plan-label");
+const planBadge = document.getElementById("plan-badge");
+const planKeyForm = document.getElementById("plan-key-form");
+const planUnlocked = document.getElementById("plan-unlocked");
+const planMsg = document.getElementById("plan-msg");
+const couponInput = document.getElementById("coupon-input");
+
+function setPlanUI(paid){
+  isPaid = paid;
+  if(paid){
+    planLabel.textContent = "有料版";
+    planBadge.textContent = "PRO";
+    planBadge.className = "badge paid";
+    planKeyForm.style.display = "none";
+    planUnlocked.style.display = "flex";
+  } else {
+    planLabel.textContent = "無料版(ロングホールのみ)";
+    planBadge.textContent = "FREE";
+    planBadge.className = "badge free";
+    planKeyForm.style.display = "block";
+    planUnlocked.style.display = "none";
+  }
+  document.querySelectorAll(".mode-tab").forEach(tab=>{
+    const locked = !paid && tab.dataset.mode !== "long";
+    tab.classList.toggle("locked", locked);
+  });
+  // 無料版でロック中のモードを表示していた場合はロングホールへ戻す
+  if(!paid && mode !== "long"){
+    const longTab = document.querySelector('.mode-tab[data-mode="long"]');
+    if(longTab) longTab.click();
+  }
+}
+
+async function checkPaidStatus(){
+  try{
+    const res = await fetch(STATUS_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ deviceId })
+    });
+    const data = await res.json();
+    setPlanUI(!!data.paid);
+  } catch(e){
+    setPlanUI(false);
+  }
+}
+
+async function redeemCoupon(code){
+  try{
+    const res = await fetch(REDEEM_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ code, deviceId })
+    });
+    const data = await res.json();
+    if(data.ok){
+      setPlanUI(true);
+      planMsg.textContent = "";
+      planMsg.className = "plan-msg";
+    } else {
+      planMsg.textContent = data.error || "クーポンコードが無効です。";
+      planMsg.className = "plan-msg err";
+    }
+  } catch(e){
+    planMsg.textContent = "確認に失敗しました。通信環境をご確認ください。";
+    planMsg.className = "plan-msg err";
+  }
+}
+
+document.getElementById("coupon-activate").onclick = () => {
+  const code = couponInput.value.trim();
+  if(!code){
+    planMsg.textContent = "クーポンコードを入力してください。";
+    planMsg.className = "plan-msg err";
+    return;
+  }
+  redeemCoupon(code);
+};
+
+// 起動時: この端末が既に有料化済みか確認
+setPlanUI(false);
+checkPaidStatus();
 
 function loadProfile(){
   try{
@@ -658,63 +787,60 @@ profileToggle.onclick = () => {
 /* ---------- MODE TABS ---------- */
 document.querySelectorAll(".mode-tab").forEach(tab => {
   tab.onclick = () => {
+    if(tab.classList.contains("locked")){
+      planMsg.textContent = "ショートホール/アプローチは有料版限定です。クーポンコードを有効にしてください。";
+      planMsg.className = "plan-msg err";
+      document.getElementById("plan-section").scrollIntoView({behavior:"smooth", block:"center"});
+      return;
+    }
     document.querySelectorAll(".mode-tab").forEach(t=>t.classList.remove("active"));
     tab.classList.add("active");
     mode = tab.dataset.mode;
     document.getElementById("long-form").style.display = (mode==="long") ? "block":"none";
     document.getElementById("short-form").style.display = (mode==="short") ? "block":"none";
+    document.getElementById("approach-form").style.display = (mode==="approach") ? "block":"none";
     hideResult();
-    renderDiagram();
+    updateRepeatButtonVisibility();
   };
 });
 
-/* ---------- HAZARDS (long mode, up to 3 slots) ---------- */
-const hazardWrap = document.getElementById("l-hazards");
-for(let i=0;i<3;i++){
-  const div = document.createElement("div");
-  div.className = "hazard-block";
-  div.innerHTML = `
-    <div class="label">ハザード${i+1}</div>
-    <div class="row2">
-      <select class="hz-type" data-i="${i}">
-        <option value="">なし</option>
-        <option value="バンカー">バンカー</option>
-        <option value="池">池</option>
-        <option value="OB">OB</option>
-        <option value="林">林</option>
-      </select>
-      <select class="hz-pos" data-i="${i}">
-        <option value="中央">中央</option>
-        <option value="左">左</option>
-        <option value="右">右</option>
-      </select>
-    </div>
-    <div class="hz-dist-row">
-      <span class="hz-dist-label">距離</span>
-      <div class="slider-field">
-        <input type="range" class="hz-dist" data-i="${i}" min="100" max="200" step="10" value="150" style="--fill:50%">
-        <div class="slider-value"><span class="hz-dist-out" data-i="${i}">150</span>yd</div>
-      </div>
-    </div>
-  `;
-  hazardWrap.appendChild(div);
-}
+/* ---------- HAZARDS (shared component: long + short, up to 3 slots each) ---------- */
 function updateSliderFill(el){
   const min = Number(el.min), max = Number(el.max);
   const pct = ((Number(el.value) - min) / (max - min)) * 100;
   el.style.setProperty("--fill", pct + "%");
 }
-hazardWrap.addEventListener("input", e => {
-  if(e.target.classList.contains("hz-dist")){
-    const i = e.target.dataset.i;
-    const out = hazardWrap.querySelector(`.hz-dist-out[data-i="${i}"]`);
-    if(out) out.textContent = e.target.value;
-    updateSliderFill(e.target);
+function buildHazardWrap(containerId, count){
+  count = count || 3;
+  const wrap = document.getElementById(containerId);
+  for(let i=0;i<count;i++){
+    const div = document.createElement("div");
+    div.className = "hazard-block";
+    div.innerHTML = `
+      <div class="label">ハザード${count > 1 ? (i+1) : ""}</div>
+      <div class="row2">
+        <select class="hz-type" data-i="${i}">
+          <option value="">なし</option>
+          <option value="バンカー">バンカー</option>
+          <option value="池">池</option>
+          <option value="OB">OB</option>
+          <option value="林">林</option>
+        </select>
+        <select class="hz-pos" data-i="${i}">
+          <option value="中央">中央</option>
+          <option value="左">左</option>
+          <option value="右">右</option>
+          <option value="奥">奥</option>
+        </select>
+      </div>
+    `;
+    wrap.appendChild(div);
   }
-  renderDiagram();
-});
-hazardWrap.addEventListener("change", renderDiagram);
-hazardWrap.querySelectorAll(".hz-dist").forEach(updateSliderFill);
+  return wrap;
+}
+const hazardWrap = buildHazardWrap("l-hazards", 3);
+const hazardWrapShort = buildHazardWrap("s-hazards", 1);
+
 
 function wireDistanceSlider(inputId, outId){
   const el = document.getElementById(inputId);
@@ -722,62 +848,28 @@ function wireDistanceSlider(inputId, outId){
   el.addEventListener("input", () => {
     out.textContent = el.value;
     updateSliderFill(el);
-    renderDiagram();
   });
+  out.textContent = el.value;
   updateSliderFill(el);
 }
 wireDistanceSlider("l-dist", "l-dist-val");
 wireDistanceSlider("s-dist", "s-dist-val");
-
-/* ---------- DIAGRAM ---------- */
-const diagram = document.getElementById("diagram");
-function renderDiagram(){
-  diagram.querySelectorAll(".marker").forEach(m=>m.remove());
-  document.getElementById("ball-marker").style.display = "none";
-  const totalDist = mode==="long"
-    ? Number(document.getElementById("l-dist").value||0)
-    : Number(document.getElementById("s-dist").value||0);
-  if(!totalDist) return;
-
-  if(mode==="long"){
-    hazardWrap.querySelectorAll(".hz-type").forEach(sel => {
-      const i = sel.dataset.i;
-      const type = sel.value;
-      if(!type) return;
-      const dist = Number(hazardWrap.querySelector(`.hz-dist[data-i="${i}"]`).value||0);
-      if(!dist) return;
-      addMarker(dist, totalDist, type);
-    });
-  } else {
-    const front = document.getElementById("s-bunker-front").value;
-    const back = document.getElementById("s-bunker-back").value;
-    const water = document.getElementById("s-water").value;
-    if(front==="あり") addMarker(totalDist*0.85, totalDist, "バンカー");
-    if(back==="あり") addMarker(totalDist*0.97, totalDist, "バンカー");
-    if(water && water!=="なし") addMarker(totalDist*0.9, totalDist, "池");
-  }
-}
-function addMarker(dist, total, type){
-  const pct = Math.max(4, Math.min(96, (dist/total)*100));
-  const el = document.createElement("div");
-  el.className = "marker " + (type==="バンカー"?"bunker":type==="池"?"water":"ob");
-  el.style.left = pct + "%";
-  el.textContent = type==="バンカー" ? "⛱" : type==="池" ? "💧" : type;
-  diagram.appendChild(el);
-}
-function showBallOnDiagram(landedDist, total){
-  const marker = document.getElementById("ball-marker");
-  if(!landedDist || !total) return;
-  const pct = Math.max(4, Math.min(96, (landedDist/total)*100));
-  marker.style.display = "block";
-  requestAnimationFrame(()=>{ marker.style.left = pct + "%"; });
-}
-
+wireDistanceSlider("a-dist", "a-dist-val");
 /* ---------- ASK AI ---------- */
 const askBtn = document.getElementById("ask-btn");
+const repeatBtn = document.getElementById("repeat-btn");
 const errorBox = document.getElementById("ai-error");
 
-askBtn.onclick = async () => {
+function lastSituationKey(){
+  if(mode === "long") return "aicaddy_last_long";
+  if(mode === "short") return "aicaddy_last_short";
+  return "aicaddy_last_approach";
+}
+function updateRepeatButtonVisibility(){
+  repeatBtn.style.display = localStorage.getItem(lastSituationKey()) ? "block" : "none";
+}
+
+async function askAI(){
   errorBox.style.display = "none";
   hideResult();
 
@@ -787,7 +879,7 @@ askBtn.onclick = async () => {
     return;
   }
 
-  const payload = { mode, profile: { clubs: usedClubs, misses: profile.misses } };
+  const payload = { mode, profile: { clubs: usedClubs, misses: profile.misses }, deviceId };
 
   if(mode==="long"){
     const dist = Number(document.getElementById("l-dist").value||0);
@@ -798,7 +890,6 @@ askBtn.onclick = async () => {
       if(!sel.value) return;
       hazards.push({
         type: sel.value,
-        distance: Number(hazardWrap.querySelector(`.hz-dist[data-i="${i}"]`).value||0),
         position: hazardWrap.querySelector(`.hz-pos[data-i="${i}"]`).value
       });
     });
@@ -810,25 +901,45 @@ askBtn.onclick = async () => {
       wind_strength: document.getElementById("l-wind-str").value,
       hazards
     };
-  } else {
+  } else if(mode==="short"){
     const dist = Number(document.getElementById("s-dist").value||0);
     if(!dist){ showError("ピンまでの距離を入力してください。"); return; }
+    const hazards = [];
+    hazardWrapShort.querySelectorAll(".hz-type").forEach(sel => {
+      const i = sel.dataset.i;
+      if(!sel.value) return;
+      hazards.push({
+        type: sel.value,
+        position: hazardWrapShort.querySelector(`.hz-pos[data-i="${i}"]`).value
+      });
+    });
     payload.situation = {
       pin_distance: dist,
       elevation: document.getElementById("s-elev").value,
       elevation_m: Number(document.getElementById("s-elev-m").value||0),
       wind_direction: document.getElementById("s-wind-dir").value,
       wind_strength: document.getElementById("s-wind-str").value,
-      bunker_front: document.getElementById("s-bunker-front").value,
-      bunker_back: document.getElementById("s-bunker-back").value,
-      water: document.getElementById("s-water").value,
-      ob: document.getElementById("s-ob").value,
+      hazards,
       green_size: document.getElementById("s-green-size").value,
       pin_position: document.getElementById("s-pin-pos").value
     };
+  } else {
+    const dist = Number(document.getElementById("a-dist").value||0);
+    if(!dist){ showError("残り距離を入力してください。"); return; }
+    payload.situation = {
+      remaining_distance: dist,
+      lie: document.getElementById("a-lie").value,
+      green_slope: document.getElementById("a-green-slope").value,
+      bunker_front: document.getElementById("a-bunker-front").value,
+      pin_position: document.getElementById("a-pin-pos").value
+    };
   }
 
+  localStorage.setItem(lastSituationKey(), JSON.stringify(payload.situation));
+  updateRepeatButtonVisibility();
+
   askBtn.disabled = true;
+  repeatBtn.disabled = true;
   askBtn.textContent = "🤔 考え中...";
   try{
     const res = await fetch(WORKER_URL, {
@@ -836,17 +947,81 @@ askBtn.onclick = async () => {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify(payload)
     });
+    const data = await res.json().catch(()=>({}));
+    if(data.error){
+      showError(data.error);
+      return;
+    }
     if(!res.ok) throw new Error("サーバーエラー(" + res.status + ")");
-    const data = await res.json();
-    if(data.error) throw new Error(data.error);
     showResult(data, payload);
   }catch(e){
     showError("AIキャディの呼び出しに失敗しました: " + e.message + " (接続先: " + WORKER_URL + ")");
   }finally{
     askBtn.disabled = false;
+    repeatBtn.disabled = false;
     askBtn.textContent = "⛳ AIキャディに聞く";
   }
+}
+
+askBtn.onclick = askAI;
+
+function setRangeValue(el, val){
+  if(!el || val === undefined || val === null) return;
+  el.value = val;
+  el.dispatchEvent(new Event("input", {bubbles:true}));
+}
+function setSelectValue(el, val){
+  if(!el || val === undefined || val === null) return;
+  el.value = val;
+  el.dispatchEvent(new Event("change", {bubbles:true}));
+}
+
+function applyLongSituation(s){
+  setRangeValue(document.getElementById("l-dist"), s.remaining_distance);
+  setSelectValue(document.getElementById("l-lie"), s.lie);
+  setSelectValue(document.getElementById("l-slope"), s.slope);
+  setSelectValue(document.getElementById("l-wind-dir"), s.wind_direction);
+  setSelectValue(document.getElementById("l-wind-str"), s.wind_strength);
+  const hazards = s.hazards || [];
+  for(let i=0;i<3;i++){
+    const h = hazards[i] || {type:"", position:"中央"};
+    setSelectValue(hazardWrap.querySelector(`.hz-type[data-i="${i}"]`), h.type || "");
+    setSelectValue(hazardWrap.querySelector(`.hz-pos[data-i="${i}"]`), h.position || "中央");
+  }
+}
+function applyShortSituation(s){
+  setRangeValue(document.getElementById("s-dist"), s.pin_distance);
+  setSelectValue(document.getElementById("s-elev"), s.elevation);
+  setSelectValue(document.getElementById("s-elev-m"), String(s.elevation_m));
+  setSelectValue(document.getElementById("s-wind-dir"), s.wind_direction);
+  setSelectValue(document.getElementById("s-wind-str"), s.wind_strength);
+  const hazards = s.hazards || [];
+  const h0 = hazards[0] || {type:"", position:"中央"};
+  setSelectValue(hazardWrapShort.querySelector(`.hz-type[data-i="0"]`), h0.type || "");
+  setSelectValue(hazardWrapShort.querySelector(`.hz-pos[data-i="0"]`), h0.position || "中央");
+  setSelectValue(document.getElementById("s-green-size"), s.green_size);
+  setSelectValue(document.getElementById("s-pin-pos"), s.pin_position);
+}
+function applyApproachSituation(s){
+  setRangeValue(document.getElementById("a-dist"), s.remaining_distance);
+  setSelectValue(document.getElementById("a-lie"), s.lie);
+  setSelectValue(document.getElementById("a-green-slope"), s.green_slope);
+  setSelectValue(document.getElementById("a-bunker-front"), s.bunker_front);
+  setSelectValue(document.getElementById("a-pin-pos"), s.pin_position);
+}
+
+repeatBtn.onclick = async () => {
+  const raw = localStorage.getItem(lastSituationKey());
+  if(!raw) return;
+  const situation = JSON.parse(raw);
+  if(mode === "long") applyLongSituation(situation);
+  else if(mode === "short") applyShortSituation(situation);
+  else applyApproachSituation(situation);
+  await askAI();
 };
+
+updateRepeatButtonVisibility();
+
 
 function showError(msg){
   errorBox.textContent = msg;
@@ -868,15 +1043,10 @@ function showResult(data, payload){
   document.getElementById("result").style.display = "block";
   document.getElementById("result").scrollIntoView({behavior:"smooth", block:"nearest"});
 
-  const total = mode==="long" ? payload.situation.remaining_distance : payload.situation.pin_distance;
-  const club = profile.clubs.find(c => c.name === data.club);
-  if(club){
-    const landed = (club.carry||0) + (club.run||0);
-    showBallOnDiagram(Math.min(landed, total*0.98), total);
+  if(data._usage && data._usage.tier === "free" && typeof data._usage.remainingFree === "number"){
+    planLabel.textContent = `無料版(ロングホールのみ)・残り${data._usage.remainingFree}回`;
   }
 }
-
-renderDiagram();
 </script>
 </body>
 </html>
