@@ -254,6 +254,7 @@ input[type=range]::-moz-range-thumb{
   padding:10px 12px;margin-bottom:8px;
 }
 .hazard-block .label{font-size:11.5px;color:var(--sand);font-weight:700;margin-bottom:6px;}
+.hazard-block .chips{margin-top:8px;}
 .hazard-block select{
   width:100%;padding:8px 6px;border:1px solid var(--line);border-radius:8px;
   background:var(--paper);font-size:12.5px;color:var(--ink);font-family:"Noto Sans JP",sans-serif;
@@ -448,7 +449,7 @@ footer.note{padding:16px 22px 40px;font-size:11px;color:#8a8371;line-height:1.7;
 
     <div id="l-hazards"></div>
 
-    <p class="hint" style="margin-top:8px;">ハザードは最大3つまで登録できます。</p>
+    <p class="hint" style="margin-top:8px;">ハザードは最大2つまで登録できます。</p>
   </div>
 
   <!-- SHORT MODE -->
@@ -810,36 +811,55 @@ function updateSliderFill(el){
   const pct = ((Number(el.value) - min) / (max - min)) * 100;
   el.style.setProperty("--fill", pct + "%");
 }
+const HAZARD_POSITIONS = ["グリーン奥","グリーン右","グリーン左","右手前","左手前","右奥","左奥"];
+
 function buildHazardWrap(containerId, count){
-  count = count || 3;
+  count = count || 2;
   const wrap = document.getElementById(containerId);
   for(let i=0;i<count;i++){
     const div = document.createElement("div");
     div.className = "hazard-block";
+    const chipsHtml = HAZARD_POSITIONS.map(p =>
+      `<span class="chip hz-pos-chip" data-i="${i}" data-val="${p}">${p}</span>`
+    ).join("");
     div.innerHTML = `
       <div class="label">ハザード${count > 1 ? (i+1) : ""}</div>
-      <div class="row2">
-        <select class="hz-type" data-i="${i}">
-          <option value="">なし</option>
-          <option value="バンカー">バンカー</option>
-          <option value="池">池</option>
-          <option value="OB">OB</option>
-          <option value="林">林</option>
-        </select>
-        <select class="hz-pos" data-i="${i}">
-          <option value="中央">中央</option>
-          <option value="左">左</option>
-          <option value="右">右</option>
-          <option value="奥">奥</option>
-        </select>
+      <select class="hz-type" data-i="${i}">
+        <option value="">なし</option>
+        <option value="バンカー">バンカー</option>
+        <option value="池">池</option>
+        <option value="OB">OB</option>
+        <option value="林">林</option>
+      </select>
+      <div class="hz-dist-row">
+        <span class="hz-dist-label">距離</span>
+        <input type="range" class="hz-dist" data-i="${i}" min="0" max="250" step="10" value="100" style="--fill:40%">
+        <div class="slider-value"><span class="hz-dist-val" data-i="${i}">100</span>yd</div>
       </div>
+      <div class="chips hz-pos-chips">${chipsHtml}</div>
     `;
     wrap.appendChild(div);
   }
+  // ハザード距離スライダーの表示・塗り更新
+  wrap.querySelectorAll(".hz-dist").forEach(el => {
+    const i = el.dataset.i;
+    const out = wrap.querySelector(`.hz-dist-val[data-i="${i}"]`);
+    el.addEventListener("input", () => {
+      out.textContent = el.value;
+      updateSliderFill(el);
+    });
+    updateSliderFill(el);
+  });
+  // ハザードの位置(複数選択可)をタップでトグル
+  wrap.querySelectorAll(".hz-pos-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      chip.classList.toggle("active");
+    });
+  });
   return wrap;
 }
-const hazardWrap = buildHazardWrap("l-hazards", 3);
-const hazardWrapShort = buildHazardWrap("s-hazards", 1);
+const hazardWrap = buildHazardWrap("l-hazards", 2);
+const hazardWrapShort = buildHazardWrap("s-hazards", 2);
 
 
 function wireDistanceSlider(inputId, outId){
@@ -869,6 +889,22 @@ function updateRepeatButtonVisibility(){
   repeatBtn.style.display = localStorage.getItem(lastSituationKey()) ? "block" : "none";
 }
 
+function collectHazards(wrap, count){
+  const hazards = [];
+  for(let i=0;i<count;i++){
+    const typeSel = wrap.querySelector(`.hz-type[data-i="${i}"]`);
+    if(!typeSel || !typeSel.value) continue;
+    const distEl = wrap.querySelector(`.hz-dist[data-i="${i}"]`);
+    const positions = Array.from(wrap.querySelectorAll(`.hz-pos-chip[data-i="${i}"].active`)).map(c => c.dataset.val);
+    hazards.push({
+      type: typeSel.value,
+      distance: Number(distEl ? distEl.value : 0) || 0,
+      positions
+    });
+  }
+  return hazards;
+}
+
 async function askAI(){
   errorBox.style.display = "none";
   hideResult();
@@ -884,42 +920,24 @@ async function askAI(){
   if(mode==="long"){
     const dist = Number(document.getElementById("l-dist").value||0);
     if(!dist){ showError("残り距離を入力してください。"); return; }
-    const hazards = [];
-    hazardWrap.querySelectorAll(".hz-type").forEach(sel => {
-      const i = sel.dataset.i;
-      if(!sel.value) return;
-      hazards.push({
-        type: sel.value,
-        position: hazardWrap.querySelector(`.hz-pos[data-i="${i}"]`).value
-      });
-    });
     payload.situation = {
       remaining_distance: dist,
       lie: document.getElementById("l-lie").value,
       slope: document.getElementById("l-slope").value,
       wind_direction: document.getElementById("l-wind-dir").value,
       wind_strength: document.getElementById("l-wind-str").value,
-      hazards
+      hazards: collectHazards(hazardWrap, 2)
     };
   } else if(mode==="short"){
     const dist = Number(document.getElementById("s-dist").value||0);
     if(!dist){ showError("ピンまでの距離を入力してください。"); return; }
-    const hazards = [];
-    hazardWrapShort.querySelectorAll(".hz-type").forEach(sel => {
-      const i = sel.dataset.i;
-      if(!sel.value) return;
-      hazards.push({
-        type: sel.value,
-        position: hazardWrapShort.querySelector(`.hz-pos[data-i="${i}"]`).value
-      });
-    });
     payload.situation = {
       pin_distance: dist,
       elevation: document.getElementById("s-elev").value,
       elevation_m: Number(document.getElementById("s-elev-m").value||0),
       wind_direction: document.getElementById("s-wind-dir").value,
       wind_strength: document.getElementById("s-wind-str").value,
-      hazards,
+      hazards: collectHazards(hazardWrapShort, 2),
       green_size: document.getElementById("s-green-size").value,
       pin_position: document.getElementById("s-pin-pos").value
     };
@@ -976,18 +994,25 @@ function setSelectValue(el, val){
   el.dispatchEvent(new Event("change", {bubbles:true}));
 }
 
+function applyHazards(wrap, hazards, count){
+  hazards = hazards || [];
+  for(let i=0;i<count;i++){
+    const h = hazards[i] || {type:"", distance:100, positions:[]};
+    setSelectValue(wrap.querySelector(`.hz-type[data-i="${i}"]`), h.type || "");
+    setRangeValue(wrap.querySelector(`.hz-dist[data-i="${i}"]`), (h.distance != null ? h.distance : 100));
+    const positions = h.positions || [];
+    wrap.querySelectorAll(`.hz-pos-chip[data-i="${i}"]`).forEach(chip => {
+      chip.classList.toggle("active", positions.includes(chip.dataset.val));
+    });
+  }
+}
 function applyLongSituation(s){
   setRangeValue(document.getElementById("l-dist"), s.remaining_distance);
   setSelectValue(document.getElementById("l-lie"), s.lie);
   setSelectValue(document.getElementById("l-slope"), s.slope);
   setSelectValue(document.getElementById("l-wind-dir"), s.wind_direction);
   setSelectValue(document.getElementById("l-wind-str"), s.wind_strength);
-  const hazards = s.hazards || [];
-  for(let i=0;i<3;i++){
-    const h = hazards[i] || {type:"", position:"中央"};
-    setSelectValue(hazardWrap.querySelector(`.hz-type[data-i="${i}"]`), h.type || "");
-    setSelectValue(hazardWrap.querySelector(`.hz-pos[data-i="${i}"]`), h.position || "中央");
-  }
+  applyHazards(hazardWrap, s.hazards, 2);
 }
 function applyShortSituation(s){
   setRangeValue(document.getElementById("s-dist"), s.pin_distance);
@@ -995,10 +1020,7 @@ function applyShortSituation(s){
   setSelectValue(document.getElementById("s-elev-m"), String(s.elevation_m));
   setSelectValue(document.getElementById("s-wind-dir"), s.wind_direction);
   setSelectValue(document.getElementById("s-wind-str"), s.wind_strength);
-  const hazards = s.hazards || [];
-  const h0 = hazards[0] || {type:"", position:"中央"};
-  setSelectValue(hazardWrapShort.querySelector(`.hz-type[data-i="0"]`), h0.type || "");
-  setSelectValue(hazardWrapShort.querySelector(`.hz-pos[data-i="0"]`), h0.position || "中央");
+  applyHazards(hazardWrapShort, s.hazards, 2);
   setSelectValue(document.getElementById("s-green-size"), s.green_size);
   setSelectValue(document.getElementById("s-pin-pos"), s.pin_position);
 }
